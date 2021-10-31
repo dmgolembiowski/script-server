@@ -24,45 +24,9 @@ def check_authorization(func):
 
         login_url = self.get_login_url()
         request_path = self.request.path
-
-        login_resource = is_allowed_during_login(request_path, login_url, self)
-        if login_resource:
-            return func(self, *args, **kwargs)
-
-        authenticated = auth.is_authenticated(self)
-        access_allowed = authenticated and authorizer.is_allowed_in_app(identify_user(self))
-
-        if authenticated and (not access_allowed):
-            user = identify_user(self)
-            LOGGER.warning('User ' + user + ' is not allowed')
-            code = 403
-            message = 'Access denied. Please contact system administrator'
-            if isinstance(self, tornado.websocket.WebSocketHandler):
-                self.close(code=code, reason=message)
-            else:
-                raise tornado.web.HTTPError(code, message)
-
-        if authenticated and access_allowed:
-            return func(self, *args, **kwargs)
-
-        if not isinstance(self, tornado.web.StaticFileHandler):
-            message = 'Not authenticated'
-            code = 401
-            LOGGER.warning('%s %s %s: user is not authenticated' % (code, self.request.method, request_path))
-            if isinstance(self, tornado.websocket.WebSocketHandler):
-                self.close(code=code, reason=message)
-                return
-            else:
-                raise tornado.web.HTTPError(code, message)
-
-        login_url += "?" + urlencode(dict(next=request_path))
-
-        redirect_relative(login_url, self)
-
-        return
+        return func(self, *args, **kwargs)
 
     return wrapper
-
 
 def is_allowed_during_login(request_path, login_url, request_handler):
     if request_handler.request.method != 'GET':
