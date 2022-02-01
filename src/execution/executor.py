@@ -15,7 +15,7 @@ LOGGER = logging.getLogger('script_server.ScriptExecutor')
 mock_process = False
 
 
-def create_process_wrapper(executor, command, working_directory, env_variables):
+def create_process_wrapper(executor, command, working_directory, env_variables, use_ssh=False, ssh_data=None):
     run_pty = executor.config.requires_terminal
     if run_pty and not os_utils.is_pty_supported():
         LOGGER.warning(
@@ -24,9 +24,15 @@ def create_process_wrapper(executor, command, working_directory, env_variables):
 
     if run_pty:
         from execution import process_pty
-        process_wrapper = process_pty.PtyProcessWrapper(command, working_directory, env_variables)
+        if use_ssh:
+            process_wrapper = process_pty.SshPtyProcessWrapper(command, working_directory, env_variables, ssh_data)
+        else:
+            process_wrapper = process_pty.PtyProcessWrapper(command, working_directory, env_variables)
     else:
-        process_wrapper = process_popen.POpenProcessWrapper(command, working_directory, env_variables)
+        if use_ssh:
+            process_wrapper = process_popen.POpenSshProcessWrapper(command, working_directory, env_variables, ssh_data)
+        else:
+            process_wrapper = process_popen.POpenProcessWrapper(command, working_directory, env_variables)
 
     return process_wrapper
 
